@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+<h:head>
+    <title>Sistema de Biblioteca Digital</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #273c75; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #dcdde1; padding: 8px; text-align: left; }
+        th { background-color: #f5f6fa; }
+        .btn { background:#4078c0;color:#fff;border-radius:4px;border:none;padding:6px 14px; cursor:pointer;}
+        .btn:hover { background:#305889; }
+    </style>
+</h:head>
+
+<h:body>
+    <h1>Sistema de Biblioteca Digital</h1>
+    
+    <h:form>
+        <h3>Autores</h3>
+        <table>
+            <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Ação</th>
+            </tr>
+            <ui:repeat value="#{bibliotecaBean.autores}" var="autor">
+                <tr>
+                    <td>#{autor.nome}</td>
+                    <td>#{autor.email}</td>
+                    <td>
+                        <h:commandButton value="Detalhes"
+                            action="#{bibliotecaBean.verDetalhesAutor(autor)}"
+                            styleClass="btn"/>
+                    </td>
+                </tr>
+            </ui:repeat>
+        </table>
+
+        <h3>Livros</h3>
+        <table>
+            <tr>
+                <th>Título</th>
+                <th>Autor</th>
+                <th>ISBN</th>
+                <th>Status</th>
+                <th>Ação</th>
+            </tr>
+            <ui:repeat value="#{bibliotecaBean.livros}" var="livro">
+                <tr>
+                    <td>#{livro.titulo}</td>
+                    <td>#{livro.autor.nome}</td>
+                    <td>#{livro.isbn}</td>
+                    <td>#{livro.disponivel ? 'Disponível' : 'Emprestado'}</td>
+                    <td>
+                        <h:commandButton value="Detalhes"
+                            action="#{bibliotecaBean.verDetalhesLivro(livro)}"
+                            styleClass="btn"/>
+                    </td>
+                </tr>
+            </ui:repeat>
+        </table>
+
+        <h3>Empréstimos Ativos</h3>
+        <table>
+            <tr>
+                <th>Usuário</th>
+                <th>Livro</th>
+                <th>Data Empréstimo</th>
+                <th>Data Prevista</th>
+                <th>Ação</th>
+            </tr>
+            <ui:repeat value="#{bibliotecaBean.emprestimosAtivos}" var="emp">
+                <tr>
+                    <td>#{emp.nomeUsuario}</td>
+                    <td>#{emp.livro.titulo}</td>
+                    <td>#{emp.dataEmprestimo}</td>
+                    <td>#{emp.dataDevolucaoPrevista}</td>
+                    <td>
+                        <h:commandButton value="Detalhes"
+                            action="#{bibliotecaBean.verDetalhesEmprestimo(emp)}"
+                            styleClass="btn"/>
+                    </td>
+                </tr>
+            </ui:repeat>
+        </table>
+    </h:form>
+</h:body>
+</html>
