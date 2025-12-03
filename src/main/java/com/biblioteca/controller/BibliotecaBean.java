@@ -1,86 +1,114 @@
 package com.biblioteca.controller;
 
-import com.biblioteca.entity.*;
-import com.biblioteca.service.BibliotecaService;
-import jakarta.annotation.PostConstruct;
-import jakarta.faces.view.ViewScoped;
+import com.biblioteca.entity.Emprestimo;
+import com.biblioteca.entity.Livro;
+import com.biblioteca.repository.EmprestimoRepository;
+import com.biblioteca.repository.LivroRepository;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.faces.context.FacesContext;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.List;
 
-@Named("bibliotecaBean")
-@ViewScoped
+@Named
+@SessionScoped
 public class BibliotecaBean implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Inject
-    private BibliotecaService service;
+    private LivroRepository livroRepository;
 
-    private List<Autor> autores;
+    @Inject
+    private EmprestimoRepository emprestimoRepository;
+
     private List<Livro> livros;
-    private List<Emprestimo> emprestimosAtivos;
 
-    private long totalLivros;
-    private long livrosDisponiveis;
-    private long emprestimosAtivosCount;
-    private long totalAutores;
-
-    // Campos para cadastro de autor
-    private String novoAutorNome;
-    private String novoAutorEmail;
-
-    @PostConstruct
     public void init() {
-        carregarDados();
-        carregarEstatisticas();
+        this.livros = livroRepository.findAll();
     }
 
-    public void carregarDados() {
+    /**
+     * Retorna o nome do usuário logado
+     */
+    public String getUsuarioLogado() {
+        HttpServletRequest request = 
+            (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
+        return request.getUserPrincipal() != null ? 
+            request.getUserPrincipal().getName() : "Anônimo";
+    }
+
+    /**
+     * Verifica se o usuário é Admin
+     */
+    public boolean isAdmin() {
+        HttpServletRequest request = 
+            (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
+        return request.isUserInRole("ADMIN");
+    }
+
+    /**
+     * Verifica se o usuário é Leitor (USER)
+     */
+    public boolean isLeitor() {
+        HttpServletRequest request = 
+            (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
+        return request.isUserInRole("USER");
+    }
+
+    /**
+     * Faz logout do usuário
+     */
+    public String logout() {
         try {
-            autores = service.listarTodosAutores();
-            livros = service.listarTodosLivros();
-            emprestimosAtivos = service.listarEmprestimosAtivos();
-        } catch (Exception e) {
-            // tratar erros
+            HttpServletRequest request = 
+                (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
+            request.logout();
+            FacesContext.getCurrentInstance().getExternalContext().invalidateSession();
+        } catch (ServletException e) {
+            e.printStackTrace();
         }
+        return "redirect:/login.xhtml";
     }
 
-    public void carregarEstatisticas() {
-        try {
-            totalLivros = service.contarTotalLivros();
-            livrosDisponiveis = service.contarLivrosDisponiveis();
-            emprestimosAtivosCount = service.contarEmprestimosAtivos();
-            totalAutores = service.contarTotalAutores();
-        } catch (Exception e) {
-            // tratar erros
+    /**
+     * Registra um empréstimo para o usuário logado
+     */
+    public String emprestarLivro(Long livroId) {
+        Livro livro = livroRepository.findById(livroId);
+        
+        if (livro == null || !livro.getStatus().equals("Disponível")) {
+            return null; // Livro não encontrado ou não disponível
         }
+
+        // Criar empréstimo
+        Emprestimo emprestimo = new Emprestimo();
+        emprestimo.setLivro(livro);
+        emprestimo.setDataEmprestimo(LocalDate.now());
+        emprestimo.setNomeUsuario(getUsuarioLogado());
+
+        // Alterar status do livro
+        livro.setStatus("Indisponível");
+        livroRepository.update(livro);
+
+        // Salvar empréstimo
+        emprestimoRepository.save(emprestimo);
+
+        return null; // Recarregar página
     }
 
-    // Método para cadastrar autor
-    public void cadastrarAutor() {
-        try {
-            service.cadastrarAutor(novoAutorNome, novoAutorEmail);
-            novoAutorNome = null;
-            novoAutorEmail = null;
-            carregarDados();
-            carregarEstatisticas();
-        } catch (Exception e) {
-            // tratar erro
+    // Getters
+    public List<Livro> getLivros() {
+        if (livros == null) {
+            init();
         }
+        return livros;
     }
 
-    // Getters e setters padrão
-    public List<Autor> getAutores() { return autores; }
-    public List<Livro> getLivros() { return livros; }
-    public List<Emprestimo> getEmprestimosAtivos() { return emprestimosAtivos; }
-    public long getTotalLivros() { return totalLivros; }
-    public long getLivrosDisponiveis() { return livrosDisponiveis; }
-    public long getEmprestimosAtivosCount() { return emprestimosAtivosCount; }
-    public long getTotalAutores() { return totalAutores; }
-    public String getNovoAutorNome() { return novoAutorNome; }
-    public void setNovoAutorNome(String novoAutorNome) { this.novoAutorNome = novoAutorNome; }
-    public String getNovoAutorEmail() { return novoAutorEmail; }
-    public void setNovoAutorEmail(String novoAutorEmail) { this.novoAutorEmail = novoAutorEmail; }
-
-    public void recarregarDados() { init(); }
+    public void setLivros(List<Livro> livros) {
+        this.livros = livros;
+    }
 }
